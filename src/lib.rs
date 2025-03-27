@@ -98,6 +98,7 @@ common::config::ConfigModule
     #[endpoint(setStakeActive)]
     fn set_stake_active(&self, id: u64) {
         require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
+
         let mut stake = self.stake(id).get();
         require!(stake.rewards_per_second > 0, ERROR_ZERO_APR);
         require!(stake.rewards_amount > 0, ERROR_NO_REWARDS);
@@ -175,6 +176,18 @@ common::config::ConfigModule
         self.send().direct_esdt(&self.blockchain().get_caller(), &stake.reward_token, 0, &amount);
         stake.rewards_amount -= &amount;
         stake.remaining_rewards -= &amount;
+        self.stake(id).set(stake);
+    }
+
+    #[only_owner]
+    #[endpoint(changeStakeType)]
+    fn change_stake_type(&self, id: u64, new_stake_type: StakeType) {
+        require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
+
+        let mut stake = self.stake(id).get();
+        require!(stake.state == State::Inactive, ERROR_STAKE_ACTIVE);
+
+        stake.stake_type = new_stake_type;
         self.stake(id).set(stake);
     }
 }

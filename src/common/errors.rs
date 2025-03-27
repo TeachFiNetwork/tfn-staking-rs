@@ -1,9 +1,11 @@
+pub static ERROR_CONTRACT_INACTIVE: &[u8] = b"contract inactive";
 pub static ERROR_STAKE_NOT_FOUND: &[u8] = b"stake not found";
 pub static ERROR_STAKE_EXPIRED: &[u8] = b"stake end time can not be in the past";
 pub static ERROR_ZERO_APR: &[u8] = b"zero apr";
 pub static ERROR_NO_REWARDS: &[u8] = b"no rewards";
 pub static ERROR_WRONG_PAYMENT_TOKEN: &[u8] = b"wrong payment token";
 pub static ERROR_STAKE_INACTIVE: &[u8] = b"stake inactive";
+pub static ERROR_STAKE_ACTIVE: &[u8] = b"stake active";
 pub static ERROR_OUT_OF_REWARDS: &[u8] = b"out of rewards";
 pub static ERROR_HIGH_AMOUNT: &[u8] = b"amount too high";
 pub static ERROR_STAKE_EXISTS: &[u8] = b"stake already exists";

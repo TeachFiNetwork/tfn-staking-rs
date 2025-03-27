@@ -11,6 +11,8 @@ storage::StorageModule
     #[payable("*")]
     #[endpoint(userStake)]
     fn user_stake(&self) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
+
         let payment = self.call_value().single_esdt();
         let mut stake = match self.get_stake_by_token(&payment.token_identifier) {
             Some(stake) => stake,
@@ -40,6 +42,8 @@ storage::StorageModule
     #[payable("*")]
     #[endpoint(userUnstake)]
     fn user_unstake(&self) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
+
         let payments = self.call_value().all_esdt_transfers();
         require!(payments.len() > 0, ERROR_WRONG_PAYMENT_TOKEN);
 
@@ -77,6 +81,8 @@ storage::StorageModule
     #[payable("*")]
     #[endpoint(claimRewards)]
     fn claim_rewards(&self) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
+
         let payments = self.call_value().all_esdt_transfers();
         require!(payments.len() > 0, ERROR_WRONG_PAYMENT_TOKEN);
 
