@@ -1,10 +1,10 @@
-use crate::common::config::{self, *};
+use crate::common::storage::{self, *};
 
 multiversx_sc::imports!();
 
 #[multiversx_sc::module]
 pub trait HelpersModule:
-config::ConfigModule
+storage::StorageModule
 {
     fn update_rps(&self, stake: &mut Stake<Self::Api>) -> bool {
         if stake.remaining_time == 0 {

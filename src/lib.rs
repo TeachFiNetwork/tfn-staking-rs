@@ -6,11 +6,12 @@ pub mod common;
 pub mod user;
 pub mod helpers;
 
-use common::{config::*, consts::*, errors::*};
+use common::{storage::*, consts::*, errors::*};
 
 #[multiversx_sc::contract]
 pub trait TFNStakingContract<ContractReader>:
 common::config::ConfigModule
++common::storage::StorageModule
 +user::UserModule
 +helpers::HelpersModule
 {

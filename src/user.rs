@@ -1,10 +1,11 @@
-use crate::{common::{config::{self, *}, errors::*}, helpers};
-
 multiversx_sc::imports!();
+
+use crate::{common::{config, errors::*, storage::{self, *}}, helpers};
 
 #[multiversx_sc::module]
 pub trait UserModule:
-config::ConfigModule
+storage::StorageModule
++config::ConfigModule
 +helpers::HelpersModule
 {
     #[payable("*")]

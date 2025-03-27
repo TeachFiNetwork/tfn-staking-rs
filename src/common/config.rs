@@ -1,60 +1,14 @@
 multiversx_sc::imports!();
-multiversx_sc::derive_imports!();
 
-#[type_abi]
-#[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Eq, Copy, Clone, Debug)]
-pub enum State {
-    Inactive,
-    Active,
-}
+use crate::{common::errors::*, helpers};
 
-#[type_abi]
-#[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Eq, Copy, Clone, Debug)]
-pub enum StakeType {
-    FixedAPR,
-    DynamicAPR,
-}
-
-#[type_abi]
-#[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Eq, Clone, Debug)]
-pub struct Stake<M: ManagedTypeApi> {
-    pub id: u64,
-    pub state: State,
-    pub stake_type: StakeType,
-    pub token: TokenIdentifier<M>,
-    pub token_decimals: u8,
-    pub liquid_token: TokenIdentifier<M>,
-    pub reward_token: TokenIdentifier<M>,
-    pub staked_amount: BigUint<M>,
-    pub rewards_amount: BigUint<M>,
-    pub claimable_rewards: BigUint<M>,
-    pub remaining_rewards: BigUint<M>,
-    pub rewards_per_second: BigUint<M>, // apr
-    pub start_time: u64,
-    pub end_time: u64,
-    pub remaining_time: u64,
-    pub rps: BigUint<M>,
-    pub last_rps_update_time: u64,
-}
-
-impl<M> Stake<M>
-where M: ManagedTypeApi {
-    pub fn is_active(&self, current_time: u64) -> bool {
-        self.state == State::Active &&
-        self.end_time > current_time &&
-        self.remaining_rewards > 0 &&
-        self.remaining_rewards >= self.claimable_rewards
-    }
-}
-
-#[type_abi]
-#[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Eq, Clone, Debug)]
-pub struct StakeTokenAttributes<M: ManagedTypeApi> {
-    pub rps: BigUint<M>,
-}
+use super::storage::*;
 
 #[multiversx_sc::module]
-pub trait ConfigModule {
+pub trait ConfigModule:
+super::storage::StorageModule
++helpers::HelpersModule
+{
     // state
     #[view(getState)]
     #[storage_mapper("state")]
@@ -121,9 +75,30 @@ pub trait ConfigModule {
                 continue;
             }
 
+            let mut stake = self.stake(id).get();
+            self.update_rps(&mut stake);
             stakes.push(self.stake(id).get());
         }
 
         stakes
+    }
+
+    #[view(getUserRewards)]
+    fn get_user_rewards(&self, id: u64, staked_tokens: ManagedVec<EsdtTokenPayment>) -> BigUint {
+        require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
+
+        let mut stake = self.stake(id).get();
+        self.update_rps(&mut stake);
+    
+        let mut total_rewards = BigUint::zero();
+        let one_token = BigUint::from(10u64).pow(stake.token_decimals as u32);
+        for payment in staked_tokens.iter() {
+            require!(payment.token_identifier == stake.liquid_token, ERROR_WRONG_PAYMENT_TOKEN);
+
+            let attributes: StakeTokenAttributes<Self::Api> = self.blockchain().get_token_attributes(&stake.liquid_token, payment.token_nonce);
+            total_rewards += &payment.amount * &(&stake.rps - &attributes.rps) / &one_token;
+        }
+
+        total_rewards
     }
 }
