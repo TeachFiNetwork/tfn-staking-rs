@@ -39,15 +39,16 @@ common::config::ConfigModule
         let token_ticker = ManagedBuffer::from(STAKE_TOKEN_TICKER_PREFIX).concat(token.ticker());
         self.send()
             .esdt_system_sc_proxy()
-            .issue_semi_fungible(
+            .register_meta_esdt(
                 issue_cost,
                 token_display_name,
                 token_ticker,
-                SemiFungibleTokenProperties {
+                MetaTokenProperties{
+                    num_decimals: DEFAULT_STAKE_TOKEN_DECIMALS,
                     can_freeze: true,
                     can_wipe: true,
                     can_pause: true,
-                    can_transfer_create_role: true,
+                    can_transfer_create_role: false,
                     can_change_owner: true,
                     can_upgrade: true,
                     can_add_special_roles: true,
