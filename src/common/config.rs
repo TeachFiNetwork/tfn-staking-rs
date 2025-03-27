@@ -40,7 +40,10 @@ pub struct Stake<M: ManagedTypeApi> {
 impl<M> Stake<M>
 where M: ManagedTypeApi {
     pub fn is_active(&self, current_time: u64) -> bool {
-        self.state == State::Active && self.end_time > current_time && self.remaining_rewards > 0
+        self.state == State::Active &&
+        self.end_time > current_time &&
+        self.remaining_rewards > 0 &&
+        self.remaining_rewards >= self.claimable_rewards
     }
 }
 
@@ -108,5 +111,19 @@ pub trait ConfigModule {
         }
 
         None
+    }
+
+    #[view(getStakes)]
+    fn get_stakes(&self) -> ManagedVec<Stake<Self::Api>> {
+        let mut stakes = ManagedVec::new();
+        for id in 0..self.last_stake_id().get() {
+            if self.stake(id).is_empty() {
+                continue;
+            }
+
+            stakes.push(self.stake(id).get());
+        }
+
+        stakes
     }
 }

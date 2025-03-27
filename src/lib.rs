@@ -11,6 +11,7 @@ use common::{config::*, consts::*, errors::*};
 #[multiversx_sc::contract]
 pub trait TFNStakingContract<ContractReader>:
 common::config::ConfigModule
++user::UserModule
 +helpers::HelpersModule
 {
     #[init]
@@ -39,20 +40,12 @@ common::config::ConfigModule
         let token_ticker = ManagedBuffer::from(STAKE_TOKEN_TICKER_PREFIX).concat(token.ticker());
         self.send()
             .esdt_system_sc_proxy()
-            .register_meta_esdt(
+            .issue_and_set_all_roles(
                 issue_cost,
                 token_display_name,
                 token_ticker,
-                MetaTokenProperties{
-                    num_decimals: DEFAULT_STAKE_TOKEN_DECIMALS,
-                    can_freeze: true,
-                    can_wipe: true,
-                    can_pause: true,
-                    can_transfer_create_role: false,
-                    can_change_owner: true,
-                    can_upgrade: true,
-                    can_add_special_roles: true,
-                }
+                EsdtTokenType::Meta,
+                DEFAULT_STAKE_TOKEN_DECIMALS,
             )
             .with_callback(self.callbacks().stake_token_issue_callback(&caller, stake_type, token, token_decimals, reward_token))
             .async_call_and_exit();

@@ -1,4 +1,4 @@
-use crate::common::{config::{self, *}, errors::*};
+use crate::common::config::{self, *};
 
 multiversx_sc::imports!();
 
@@ -6,9 +6,9 @@ multiversx_sc::imports!();
 pub trait HelpersModule:
 config::ConfigModule
 {
-    fn update_rps(&self, stake: &mut Stake<Self::Api>) {
+    fn update_rps(&self, stake: &mut Stake<Self::Api>) -> bool {
         if stake.remaining_time == 0 {
-            return
+            return true
         }
 
         let mut current_time = self.blockchain().get_block_timestamp();
@@ -17,7 +17,7 @@ config::ConfigModule
         }
         let elapsed_time = current_time - stake.last_rps_update_time;
         if elapsed_time == 0 {
-            return
+            return true
         }
 
         let staked = stake.staked_amount.clone();
@@ -33,13 +33,18 @@ config::ConfigModule
                 }
             };
             let new_rps = &new_claimable_rewards * &one_token / staked;
-            stake.rps += new_rps;
-            stake.claimable_rewards += &new_claimable_rewards;
-            require!(stake.remaining_rewards >= new_claimable_rewards, ERROR_OUT_OF_REWARDS);
+            // require!(stake.remaining_rewards >= new_claimable_rewards, ERROR_OUT_OF_REWARDS);
+            if stake.remaining_rewards < new_claimable_rewards {
+                return false
+            }
 
-            stake.remaining_rewards -= new_claimable_rewards;
+            stake.remaining_rewards -= &new_claimable_rewards;
+            stake.claimable_rewards += new_claimable_rewards;
+            stake.rps += new_rps;
         }
         stake.last_rps_update_time = current_time;
         stake.remaining_time -= elapsed_time;
+
+        true
     }
 }
