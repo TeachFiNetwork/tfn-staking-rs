@@ -17,6 +17,7 @@ common::config::ConfigModule
 {
     #[init]
     fn init(&self) {
+        self.set_state_active();
     }
 
     #[upgrade]
@@ -33,6 +34,7 @@ common::config::ConfigModule
         token_decimals: u8,
         reward_token: TokenIdentifier,
     ) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
         require!(self.get_stake_by_token(&token).is_none(), ERROR_STAKE_EXISTS);
 
         let caller = self.blockchain().get_caller();
@@ -97,6 +99,7 @@ common::config::ConfigModule
     #[only_owner]
     #[endpoint(setStakeActive)]
     fn set_stake_active(&self, id: u64) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
         require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
 
         let mut stake = self.stake(id).get();
@@ -111,6 +114,9 @@ common::config::ConfigModule
     #[only_owner]
     #[endpoint(setStakeInactive)]
     fn set_stake_inactive(&self, id: u64) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
+        require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
+
         self.stake(id).update(|stake| {
             stake.state = State::Inactive;
         });
@@ -119,6 +125,7 @@ common::config::ConfigModule
     #[only_owner]
     #[endpoint(setStakeRewardsPerSecond)]
     fn set_stake_rewards_per_second(&self, id: u64, rewards_per_second: BigUint) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
         require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
         require!(rewards_per_second > 0, ERROR_ZERO_APR);
 
@@ -131,6 +138,7 @@ common::config::ConfigModule
     #[only_owner]
     #[endpoint(setStakeEndTime)]
     fn set_stake_end_time(&self, id: u64, new_end_time: u64) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
         require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
         require!(new_end_time > self.blockchain().get_block_timestamp(), ERROR_STAKE_EXPIRED);
 
@@ -144,10 +152,10 @@ common::config::ConfigModule
         self.stake(id).set(stake);
     }
 
-    #[only_owner]
     #[payable("*")]
     #[endpoint(depositRewards)]
     fn deposit_rewards(&self, id: u64) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
         require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
 
         let mut stake = self.stake(id).get();
@@ -163,6 +171,7 @@ common::config::ConfigModule
     #[only_owner]
     #[endpoint(withdrawRewards)]
     fn withdraw_rewards(&self, id: u64, opt_amount: OptionalValue<BigUint>) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
         require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
 
         let mut stake = self.stake(id).get();
@@ -182,6 +191,7 @@ common::config::ConfigModule
     #[only_owner]
     #[endpoint(changeStakeType)]
     fn change_stake_type(&self, id: u64, new_stake_type: StakeType) {
+        require!(self.state().get() == State::Active, ERROR_CONTRACT_INACTIVE);
         require!(!self.stake(id).is_empty(), ERROR_STAKE_NOT_FOUND);
 
         let mut stake = self.stake(id).get();
